@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<link rel="shortcut icon" href="https://cdn-icons-png.flaticon.com/512/2612/2612467.png" type="image/x-icon">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Generador Final - Hombres y Mujeres Separados</title>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+    :root { --primary: #0066ff; --bg: #121212; --card: #1e1e1e; --text: #ffffff; --neon: #0ff; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Roboto', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; }
+    .app-container { display: flex; flex: 1; height: 100vh; overflow: hidden; }
+    .sidebar { width: 320px; background: var(--card); padding: 25px; border-right: 1px solid #333; display: flex; flex-direction: column; gap: 20px; z-index: 100; overflow-y: auto; }
+    .sidebar h2 { color: var(--primary); font-size: 1.2rem; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 1px; }
+    .input-group { display: flex; flex-direction: column; gap: 8px; }
+    label { font-size: 0.85rem; color: #aaa; font-weight: bold; }
+    input, select { background: #2b2b2b; border: 1px solid #444; color: white; padding: 12px; border-radius: 6px; outline: none; }
+    input:focus { border-color: var(--primary); }
+    .color-row { display: flex; align-items: center; gap: 10px; background: #2b2b2b; padding: 5px 10px; border-radius: 6px; border: 1px solid #444;}
+    input[type="color"] { border: none; width: 40px; height: 30px; background: transparent; cursor: pointer; padding: 0;}
+    button { padding: 15px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 1rem; transition: 0.2s; margin-top: 10px; }
+    .btn-run { background: var(--primary); color: white; }
+    .btn-run:hover { background: #0052cc; }
+    .btn-zip { background: #00c853; color: white; }
+    .btn-zip:hover { background: #009624; }
+    .btn-zip:disabled { background: #444; color: #888; cursor: not-allowed; }
+    .btn-gen-files { background: #ff9800; color: white; }
+    .btn-gen-files:hover { background: #f57c00; }
+    .btn-gen-products { background: #ff5722; color: white; }
+    .btn-gen-products:hover { background: #e64a19; }
+    .btn-gen-products-table { background: #2196f3; color: white; }
+    .btn-gen-products-table:hover { background: #1e88e5; }
+    .gallery-container { flex: 1; padding: 40px; overflow-y: auto; position: relative; }
+    .status-bar { margin-bottom: 20px; padding: 15px; background: #252525; border-radius: 8px; text-align: center; color: #aaa; display: none; border: 1px solid #333; }
+    .gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 20px; }
+    .img-item { background: var(--card); padding: 15px; border-radius: 10px; text-align: center; border: 1px solid #333; animation: popIn 0.3s ease; }
+    .img-item img { width: 100%; height: auto; border-radius: 50%; display: block; margin-bottom: 10px; }
+    .img-name { font-size: 0.9rem; color: #00c853; font-weight: bold; word-break: break-all; font-family: monospace; }
+    @keyframes popIn { from{transform: scale(0.8); opacity:0;} to{transform: scale(1); opacity:1;} }
+    @media(max-width: 700px){ .app-container { flex-direction: column; overflow: auto; height: auto; } .sidebar { width: 100%; height: auto; } }
+    .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.4); }
+    .modal-content { background-color: var(--card); margin: 15% auto; padding: 20px; border: 1px solid #888; width: 80%; max-width: 500px; border-radius: 8px; }
+    .close { color: #aaa; float: right; font-size: 28px; font-weight: bold; cursor: pointer; }
+    .close:hover, .close:focus { color: white; text-decoration: none; cursor: pointer; }
+    .modal h2 { color: var(--primary); font-size: 1.2rem; margin-bottom: 20px; }
+    .btn-generate { background: #4caf50; color: white; width: 100%; }
+    .btn-generate:hover { background: #388e3c; }
+    .heart-icon { width: 50px; height: 50px; border-radius: 50%; cursor: pointer; animation: heartbeat 1s infinite ease-in-out; display: block; margin: 0 auto; }
+    @keyframes heartbeat { 0% { transform: scale(1); } 20% { transform: scale(1.1); } 40% { transform: scale(1); } 60% { transform: scale(1.1); } 80% { transform: scale(1); } }
+    .modal-content-cyber { background: #000; border: 1px solid var(--neon); box-shadow: 0 0 20px var(--neon); color: var(--neon); text-shadow: 0 0 5px var(--neon); font-family: 'Courier New', monospace; }
+    .modal-content-cyber a { color: var(--neon); text-decoration: none; }
+    .modal-content-cyber a:hover { text-shadow: 0 0 10px var(--neon); }
+    @keyframes glitch { 0% { transform: translate(0); } 20% { transform: translate(-2px, 2px); } 40% { transform: translate(-2px, -2px); } 60% { transform: translate(2px, 2px); } 80% { transform: translate(2px, -2px); } 100% { transform: translate(0); } }
+    .modal-content-cyber:hover { animation: glitch 0.3s linear infinite; }
+</style>
+</head>
+<body>
+<div class="app-container">
+    <div class="sidebar">
+        <h2>Generador de Fotos o Archivos</h2>
+        <img id="creatorIcon" class="heart-icon" src="https://avatars.githubusercontent.com/u/38921558?v=4" alt="Corazón Creador" onclick="openCreatorModal()">
+        <div class="input-group">
+            <label>Cantidad Total</label>
+            <input type="number" id="cantidad" value="6" min="1" max="50">
+        </div>
+        <div class="input-group">
+            <label>Género</label>
+            <select id="genero">
+                <option value="all">Aleatorio (Hombres y Mujeres)</option>
+                <option value="male">Solo Hombres</option>
+                <option value="female">Solo Mujeres</option>
+            </select>
+        </div>
+        <div class="input-group">
+            <label>Tamaño (px)</label>
+            <input type="number" id="tamano" value="400">
+        </div>
+        <div class="input-group">
+            <label>Borde Interno</label>
+            <div class="color-row"><input type="color" id="borde1" value="#ffffff"></div>
+        </div>
+        <div class="input-group">
+            <label>Borde Externo</label>
+            <div class="color-row"><input type="color" id="borde2" value="#121212"></div>
+        </div>
+        <button class="btn-run" onclick="comenzarProceso()">1. GENERAR FOTOS</button>
+        <button class="btn-zip" id="btnZip" onclick="descargarZip()" disabled>2. DESCARGAR ZIP</button>
+        <button class="btn-gen-files" onclick="openModal()">3. DESCARGA TABLA PERSONA .XLSX Y CSV</button>
+        <button class="btn-gen-products" onclick="openProductsModal()">4. DESCARGAR FOTS DE PRODUCTOS</button>
+        <button class="btn-gen-products-table" onclick="openProductsTableModal()">5. DESCARGAR TABLA PRODUCTOS .XLSX</button>
+        <p style="font-size: 0.8rem; color: #aaa; margin-top: 20px;">Nota: Las imágenes de personas disponibles son 40 (17 mujeres, 23 hombres), pero puedes generar más y descargarlas tú mismo. Para productos, máximo 23.</p>
+    </div>
+    <div class="gallery-container">
+        <div id="statusBar" class="status-bar">Esperando...</div>
+        <div id="gallery" class="gallery"></div>
+    </div>
+</div>
+<div id="myModal" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="closeModal()">&times;</span>
+        <h2>Generar Archivos</h2>
+        <button class="btn-generate" onclick="generateFiles()">Generar y Descargar Excel y CSV</button>
+    </div>
+</div>
+<div id="productsModal" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="closeProductsModal()">&times;</span>
+        <h2>Descargar Productos</h2>
+        <button class="btn-generate" onclick="descargarProductos()">Descargar ZIP de Imágenes de Productos</button>
+    </div>
+</div>
+<div id="productsTableModal" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="closeProductsTableModal()">&times;</span>
+        <h2>Descargar Tabla Productos</h2>
+        <button class="btn-generate" onclick="generateProductsFiles()">Generar y Descargar Excel y CSV Productos</button>
+    </div>
+</div>
+<!-- Modal de Presentación del Creador -->
+<!-- Modal de Presentación del Creador -->
+<div id="creatorModal" class="modal">
+  <div class="modal-content creator-modal">
+    <span class="close" onclick="closeCreatorModal()">&times;</span>
+    
+    <!-- Foto centrada -->
+    <img src="https://avatars.githubusercontent.com/u/38921558?v=4" 
+         alt="Foto Juancito Peña" class="creator-photo">
+    
+    <!-- Texto centrado -->
+    <h2>Juancito Peña</h2>
+    <p>👨‍💻 Desarrollador Full-Stack</p>
+    <p>📊 Analista de Datos</p>
+    <p>🎓 Docente Universitario</p>
+    
+    <!-- Redes sociales -->
+    <div class="social-links">
+      <a href="https://twitter.com/juancitopena" target="_blank">
+        <img src="https://cdn-icons-png.flaticon.com/512/733/733579.png" alt="Twitter">
+      </a>
+      <a href="https://www.linkedin.com/in/juancitopena" target="_blank">
+        <img src="https://cdn-icons-png.flaticon.com/512/174/174857.png" alt="LinkedIn">
+      </a>
+      <a href="https://github.com/JUANCITOPENA" target="_blank">
+        <img src="https://cdn-icons-png.flaticon.com/512/733/733553.png" alt="GitHub">
+      </a>
+    </div>
+  </div>
+</div>
+
+<style>
+  .creator-modal {
+    text-align: center;
+    width: 90%;
+    max-width: 700px;
+    border: 5px solid transparent;
+    border-radius: 12px;
+    animation: borderWave 6s linear infinite;
+    padding: 20px;
+  }
+  .creator-photo {
+    width: 140px;
+    height: 140px;
+    border-radius: 50%;
+    margin: 0 auto 20px auto;
+    display: block;
+    border: 3px solid #fff;
+  }
+  .creator-modal h2 {
+    color: var(--primary);
+    margin-bottom: 10px;
+    font-size: 2rem;
+  }
+  .creator-modal p {
+    margin: 5px 0;
+    font-size: 1.2rem;
+    color: var(--text);
+  }
+  /* Redes sociales */
+  .social-links {
+    margin-top: 20px;
+    display: flex;
+    justify-content: center;
+    gap: 25px;
+  }
+  .social-links img {
+    width: 40px;
+    height: 40px;
+    filter: brightness(0) invert(1); /* Blanco luminoso */
+    transition: transform 0.3s ease, filter 0.3s ease;
+  }
+  .social-links img:hover {
+    transform: scale(1.2);
+    filter: brightness(2) invert(1); /* Brillo extra al hover */
+  }
+  /* Animación de borde con 3 colores como olas */
+  @keyframes borderWave {
+    0%   { border-color: #0066ff; }
+    33%  { border-color: #00c853; }
+    66%  { border-color: #ff9800; }
+    100% { border-color: #0066ff; }
+  }
+</style>
+
+
+<script>
+    let imagenesProcesadas = []; 
+    const gallery = document.getElementById('gallery');
+    const status = document.getElementById('statusBar');
+    const btnZip = document.getElementById('btnZip');
+    const btnRun = document.querySelector('.btn-run');
+
+    async function comenzarProceso() {
+        imagenesProcesadas = [];
+        gallery.innerHTML = '';
+        btnZip.disabled = true;
+        btnRun.disabled = true;
+        btnZip.textContent = "2. DESCARGAR ZIP";
+       
+        const cantidadObjetivo = Math.min(parseInt(document.getElementById('cantidad').value) || 1, 50);
+        const generoInput = document.getElementById('genero').value;
+        const tamano = parseInt(document.getElementById('tamano').value) || 400;
+        const c1 = document.getElementById('borde1').value;
+        const c2 = document.getElementById('borde2').value;
+        
+        // --- CONTROL DE REPETIDOS ---
+        let idsMaleUsados = [];
+        let idsFemaleUsados = [];
+
+        mostrarEstado(`Generando ${cantidadObjetivo} imágenes...`, true);
+        
+        let generadasTotal = 0;
+        // Reiniciamos contadores. cM para hombres, cF para mujeres.
+        let cM = 0; 
+        let cF = 0; 
+        let intentosGlobales = 0;
+        
+        while(generadasTotal < cantidadObjetivo) {
+            
+            if(intentosGlobales > 300) { alert("Error de red o falta de imágenes."); break; }
+            intentosGlobales++;
+
+            // 1. DETERMINAR GÉNERO
+            let generoActual = generoInput;
+            if(generoActual === 'all') {
+                generoActual = Math.random() < 0.5 ? 'male' : 'female';
+            }
+            
+            // 2. BUSCAR ID NO USADO (Anti-Duplicados)
+            let id = -1;
+            let esUnico = false;
+            let subTry = 0;
+            
+            while(!esUnico && subTry < 100) {
+                subTry++;
+                id = Math.floor(Math.random() * 78); // 78 es aprox el maximo de la API
+                if(generoActual === 'male') {
+                    if(!idsMaleUsados.includes(id)) { idsMaleUsados.push(id); esUnico = true; }
+                } else {
+                    if(!idsFemaleUsados.includes(id)) { idsFemaleUsados.push(id); esUnico = true; }
+                }
+            }
+            if(!esUnico) continue; // Si no encuentra ID único, saltamos y probamos de nuevo
+
+            // 3. PROCESAR
+            const urlFuente = `xsgames.co/randomusers/assets/avatars/${generoActual}/${id}.jpg`;
+            const proxyUrl = `https://images.weserv.nl/?url=${urlFuente}&output=png&w=${tamano}&h=${tamano}`;
+
+            try {
+                const base64 = await procesarImagen(proxyUrl, tamano, c1, c2);
+               
+                // 4. ASIGNAR NOMBRE SEGÚN EL GÉNERO CALCULADO
+                let nombreArchivo = "";
+                
+                if (generoActual === 'male') {
+                    cM++; 
+                    nombreArchivo = `mpersona_${cM}.png`;  // <--- AQUÍ ESTÁ EL HOMBRE
+                } else {
+                    cF++;
+                    nombreArchivo = `fpersona_${cF}.png`;  // <--- AQUÍ ESTÁ LA MUJER
+                }
+
+                imagenesProcesadas.push({ nombre: nombreArchivo, data: base64 });
+                pintarEnGaleria(base64, nombreArchivo);
+                generadasTotal++; 
+                
+            } catch (e) {
+                // Fallo silencioso, reintentamos ciclo
+                await new Promise(r => setTimeout(r, 100));
+            }
+        }
+        
+        btnRun.disabled = false;
+        if(generadasTotal === cantidadObjetivo) {
+            btnZip.disabled = false;
+            mostrarEstado(`¡Listo! Generados: ${cM} mpersona y ${cF} fpersona.`, true);
+        }
+    }
+
+    function procesarImagen(url, size, c1, c2) {
+        return new Promise(async (resolve, reject) => {
+            try {
+                const response = await fetch(url);
+                if(!response.ok) throw new Error("Error");
+                const blob = await response.blob();
+                const bitmap = await createImageBitmap(blob);
+                const canvas = document.createElement('canvas');
+                const padding = size * 0.12; 
+                const finalSize = size + padding;
+                canvas.width = finalSize; canvas.height = finalSize;
+                const ctx = canvas.getContext('2d');
+                ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
+                
+                const cx = finalSize/2; const cy = finalSize/2; const r = size/2;
+
+                ctx.beginPath(); ctx.arc(cx, cy, r + (padding/2.5), 0, Math.PI*2); ctx.fillStyle = c2; ctx.fill();
+                ctx.beginPath(); ctx.arc(cx, cy, r + (padding/6), 0, Math.PI*2); ctx.fillStyle = c1; ctx.fill();
+                ctx.save(); ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI*2); ctx.clip();
+                ctx.drawImage(bitmap, cx-r, cy-r, size, size); ctx.restore();
+
+                resolve(canvas.toDataURL("image/png"));
+            } catch (e) { reject(e); }
+        });
+    }
+
+    function pintarEnGaleria(src, nombre) {
+        const div = document.createElement('div');
+        div.className = 'img-item';
+        // Muestra el nombre en texto VERDE debajo de la foto para confirmar
+        div.innerHTML = `<img src="${src}"><div class="img-name">${nombre}</div>`;
+        gallery.appendChild(div);
+        gallery.scrollTop = gallery.scrollHeight;
+    }
+
+    function descargarZip() {
+        if(imagenesProcesadas.length === 0) return;
+        btnZip.textContent = "COMPRIMIENDO..."; btnZip.disabled = true;
+        const zip = new JSZip();
+        // Carpeta en el ZIP
+        const carpeta = zip.folder("FOTOS_PERSONAS");
+        
+        imagenesProcesadas.forEach(img => {
+            const data = img.data.split(',')[1];
+            carpeta.file(img.nombre, data, {base64: true});
+        });
+        
+        zip.generateAsync({type:"blob"}).then(function(content) {
+            saveAs(content, "FOTOS_PERSONAS.zip");
+            btnZip.textContent = "2. DESCARGAR ZIP"; btnZip.disabled = false;
+            mostrarEstado("Descargado correctamente.", true);
+        });
+    }
+
+    function mostrarEstado(msg, visible) {
+        status.style.display = visible ? 'block' : 'none';
+        status.textContent = msg;
+        status.style.color = msg.includes("Listo") || msg.includes("Descargado") ? "#00c853" : "#aaa";
+    }
+
+    function openModal() {
+        document.getElementById('myModal').style.display = "block";
+    }
+
+    function closeModal() {
+        document.getElementById('myModal').style.display = "none";
+    }
+
+    function generateFiles() {
+        const females = Array.from({length: 17}, (_, i) => `fpersona_${i+1}.png`);
+        const males = Array.from({length: 23}, (_, i) => `mpersona_${i+1}.png`);
+        const allFiles = [...females, ...males];
+        const baseUrl = 'https://raw.githubusercontent.com/JUANCITOPENA/RECURSOS_IMAGENES_PERSONAS_CON_BORDES_Y_PRODCUTOS_SUPERMERCADO_GRATIS/refs/heads/main/FOTOS_PERSONAS/';
+
+        let data = [];
+        let id = 1;
+
+        const femaleNames = ['Ana', 'Maria', 'Laura', 'Sofia', 'Isabella', 'Valentina', 'Camila', 'Victoria', 'Gabriela', 'Daniela', 'Natalia', 'Sara', 'Lucia', 'Paula', 'Elena', 'Claudia', 'Patricia'];
+        const maleNames = ['Juan', 'Carlos', 'Luis', 'Miguel', 'Pedro', 'Jose', 'David', 'Alejandro', 'Francisco', 'Antonio', 'Sergio', 'Diego', 'Manuel', 'Jorge', 'Alberto', 'Roberto', 'Eduardo', 'Pablo', 'Ricardo', 'Fernando', 'Mario', 'Victor', 'Hector'];
+        const lastNames = ['Perez', 'Gomez', 'Rodriguez', 'Lopez', 'Martinez', 'Garcia', 'Hernandez', 'Sanchez', 'Ramirez', 'Torres', 'Flores', 'Rivera', 'Diaz', 'Morales', 'Ortiz', 'Reyes', 'Cruz', 'Gutierrez', 'Castillo', 'Jimenez', 'Mendoza', 'Vargas', 'Ramos'];
+        const streets = ['Calle Principal', 'Avenida Libertad', 'Calle 5', 'Carrera 10', 'Diagonal 15', 'Transversal 20'];
+        const cities = ['Bogota', 'Medellin', 'Cali', 'Barranquilla', 'Cartagena', 'Bucaramanga'];
+
+        function randomItem(arr) {
+            return arr[Math.floor(Math.random() * arr.length)];
+        }
+
+        function randomPhone() {
+            return '3' + Math.floor(Math.random() * 1000000000).toString().padStart(9, '0');
+        }
+
+        function randomAddress() {
+            return `${randomItem(streets)} ${Math.floor(Math.random() * 100 + 1)}, ${randomItem(cities)}`;
+        }
+
+        allFiles.forEach(file => {
+            const genero = file.startsWith('f') ? 'Femenino' : 'Masculino';
+            const names = genero === 'Femenino' ? femaleNames : maleNames;
+            const nombre = randomItem(names);
+            const apellido = randomItem(lastNames);
+            const nombre_completo = `${nombre} ${apellido}`;
+            const direccion = randomAddress();
+            const telefono = randomPhone();
+            const foto_url = baseUrl + file;
+
+            data.push({ id_persona: id, nombre_completo, direccion, telefono, genero, foto_url });
+            id++;
+        });
+
+        // Generar CSV
+        const csvContent = "data:text/csv;charset=utf-8," + 
+            "id_persona,nombre_completo,direccion,telefono,genero,foto_url\n" +
+            data.map(row => Object.values(row).join(',')).join('\n');
+        const encodedUri = encodeURI(csvContent);
+        const linkCsv = document.createElement("a");
+        linkCsv.setAttribute("href", encodedUri);
+        linkCsv.setAttribute("download", "personas.csv");
+        document.body.appendChild(linkCsv);
+        linkCsv.click();
+        document.body.removeChild(linkCsv);
+
+        // Generar Excel
+        const wb = XLSX.utils.book_new();
+        const ws = XLSX.utils.json_to_sheet(data);
+        XLSX.utils.book_append_sheet(wb, ws, "Personas");
+        XLSX.writeFile(wb, "personas.xlsx");
+
+        closeModal();
+    }
+
+    function openProductsModal() {
+        document.getElementById('productsModal').style.display = "block";
+    }
+
+    function closeProductsModal() {
+        document.getElementById('productsModal').style.display = "none";
+    }
+
+    async function descargarProductos() {
+        const baseUrl = 'https://raw.githubusercontent.com/JUANCITOPENA/GENERADOR_IMAGENES_PERSONAS/refs/heads/main/FOTOS_PRODUCTOS/';
+        const files = Array.from({length: 23}, (_, i) => `producto_${i+1}.png`);
+        const zip = new JSZip();
+        const carpeta = zip.folder("FOTOS_PRODUCTOS");
+
+        await Promise.all(files.map(async (file) => {
+            const url = baseUrl + file;
+            try {
+                const response = await fetch(url);
+                if (response.ok) {
+                    const blob = await response.blob();
+                    carpeta.file(file, blob);
+                }
+            } catch (e) {
+                console.error(`Error fetching ${file}:`, e);
+            }
+        }));
+
+        const content = await zip.generateAsync({type: "blob"});
+        saveAs(content, "FOTOS_PRODUCTOS.zip");
+        closeProductsModal();
+    }
+
+    function openProductsTableModal() {
+        document.getElementById('productsTableModal').style.display = "block";
+    }
+
+    function closeProductsTableModal() {
+        document.getElementById('productsTableModal').style.display = "none";
+    }
+
+    function generateProductsFiles() {
+        const baseUrl = 'https://raw.githubusercontent.com/JUANCITOPENA/GENERADOR_IMAGENES_PERSONAS/refs/heads/main/FOTOS_PRODUCTOS/';
+        const files = Array.from({length: 23}, (_, i) => `producto_${i+1}.png`);
+
+        let data = [];
+        files.forEach((file, index) => {
+            const id_producto = index + 1;
+            const foto_url = baseUrl + file;
+            data.push({ id_producto, foto_url });
+        });
+
+        // Generar CSV
+        const csvContent = "data:text/csv;charset=utf-8," + 
+            "id_producto,foto_url\n" +
+            data.map(row => Object.values(row).join(',')).join('\n');
+        const encodedUri = encodeURI(csvContent);
+        const linkCsv = document.createElement("a");
+        linkCsv.setAttribute("href", encodedUri);
+        linkCsv.setAttribute("download", "productos.csv");
+        document.body.appendChild(linkCsv);
+        linkCsv.click();
+        document.body.removeChild(linkCsv);
+
+        // Generar Excel
+        const wb = XLSX.utils.book_new();
+        const ws = XLSX.utils.json_to_sheet(data);
+        XLSX.utils.book_append_sheet(wb, ws, "Productos");
+        XLSX.writeFile(wb, "productos.xlsx");
+
+        closeProductsTableModal();
+    }
+
+    function openCreatorModal() {
+        document.getElementById('creatorModal').style.display = "block";
+    }
+
+    function closeCreatorModal() {
+        document.getElementById('creatorModal').style.display = "none";
+    }
+</script>
+</body>
+</html>
